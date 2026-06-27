@@ -200,7 +200,8 @@
   let obstacles=[], coins=[], powerups=[], particles=[], stars=[];
   let score=0, coinCount=0, speed=0, spawnTimer=0, shake=0, lastT=0, bgScroll=0;
   let shield=false, hueShift=0, lastTotal=0;
-  const GAME_URL='https://cesarepachon.github.io/sky-dash/';
+  // usa la dirección donde esté publicado el juego (GitHub, Netlify, dominio propio…)
+  const GAME_URL = location.origin + location.pathname.replace(/index\.html$/, '');
 
   // ---- Audio ----
   let actx=null;
