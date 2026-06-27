@@ -66,6 +66,11 @@
     box-shadow:0 8px 28px rgba(255,183,3,.4); transition:transform .08s ease;
   }
   .btn:active{ transform:scale(.94); }
+  .btn.secondary{
+    background:linear-gradient(90deg,#4cc9f0,#4361ee); color:#fff;
+    box-shadow:0 8px 28px rgba(67,97,238,.4); font-size:17px; padding:13px 32px;
+  }
+  .share-msg{ color:var(--ok); font-size:13px; min-height:16px; font-weight:600; }
   .stat{ font-size:17px; color:#9aa5b8; }
   .stat b{ color:var(--text); font-size:46px; display:block; }
   .best{ color:var(--accent); font-weight:700; }
@@ -141,6 +146,8 @@
       </div>
 
       <button class="btn hidden" id="retry-btn">JUGAR DE NUEVO 🔁</button>
+      <button class="btn secondary hidden" id="share-btn">Compartir mi récord 📤</button>
+      <p class="share-msg" id="share-msg"></p>
       <p class="countdown" id="countdown">Continuar en 3…</p>
     </div>
   </div>
@@ -183,7 +190,8 @@
   const GRAVITY = 1500, FLAP = -430;
   let obstacles=[], coins=[], powerups=[], particles=[], stars=[];
   let score=0, coinCount=0, speed=0, spawnTimer=0, shake=0, lastT=0, bgScroll=0;
-  let shield=false, hueShift=0;
+  let shield=false, hueShift=0, lastTotal=0;
+  const GAME_URL='https://cesarepachon.github.io/sky-dash/';
 
   // ---- Audio ----
   let actx=null;
@@ -271,12 +279,15 @@
     const m = total>=50?'🏆':total>=30?'🥇':total>=15?'🥈':total>=6?'🥉':'🎮';
     document.getElementById('medal').textContent=m;
     overScreen.classList.remove('hidden');
+    lastTotal=total;
+    document.getElementById('share-msg').textContent='';
     const retry=document.getElementById('retry-btn'), cd=document.getElementById('countdown');
-    retry.classList.add('hidden'); let n=3;
+    const shareB=document.getElementById('share-btn');
+    retry.classList.add('hidden'); shareB.classList.add('hidden'); let n=3;
     cd.classList.remove('hidden'); cd.textContent=`Continuar en ${n}…`;
     const timer=setInterval(()=>{
       n--;
-      if(n<=0){ clearInterval(timer); cd.classList.add('hidden'); retry.classList.remove('hidden'); }
+      if(n<=0){ clearInterval(timer); cd.classList.add('hidden'); retry.classList.remove('hidden'); shareB.classList.remove('hidden'); }
       else cd.textContent=`Continuar en ${n}…`;
     },1000);
   }
@@ -456,6 +467,26 @@
   });
   document.getElementById('play-btn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
   document.getElementById('retry-btn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
+  document.getElementById('share-btn').addEventListener('click', async e=>{
+    e.stopPropagation();
+    const msg=`🚀 Hice ${lastTotal} puntos en Sky Dash! ¿Me superas? 😏`;
+    const txt=`${msg}\n${GAME_URL}`;
+    const note=document.getElementById('share-msg');
+    try{
+      if(navigator.share){
+        await navigator.share({ title:'Sky Dash 🚀', text:msg, url:GAME_URL });
+        note.textContent='¡Gracias por compartir! 🙌';
+      }else{
+        await navigator.clipboard.writeText(txt);
+        note.textContent='¡Mensaje copiado! Pégalo donde quieras 📋';
+      }
+    }catch(err){
+      // si el usuario cancela el panel de compartir, no mostramos error
+      if(err && err.name!=='AbortError'){
+        try{ await navigator.clipboard.writeText(txt); note.textContent='¡Mensaje copiado! 📋'; }catch(e2){}
+      }
+    }
+  });
 
   resize(); initStars();
   player.x=W*0.28; player.y=H*0.45;
