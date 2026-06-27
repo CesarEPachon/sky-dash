@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d1b2a">
+<title>Sky Dash 🚀 — Esquiva, Recoge y Gana</title>
+
+<!-- ============================================================
+     PUBLICIDAD (ADSENSE) — PASO 1
+     Cuando tengas tu cuenta de Google AdSense aprobada, pega aquí
+     tu script. Reemplaza ca-pub-XXXXXXXXXXXXXXXX por tu ID real.
+     ------------------------------------------------------------
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+     ============================================================ -->
+
+<style>
+  :root{
+    --bg1:#0d1b2a; --bg2:#1b263b; --accent:#ffd60a; --accent2:#ff6b6b;
+    --ok:#06d6a0; --text:#e0e1dd; --coin:#ffd60a; --shield:#4cc9f0;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    font-family:var(--font); color:var(--text);
+    background:#000;
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100dvh; overflow:hidden; touch-action:manipulation;
+  }
+
+  /* ---- Espacio para ANUNCIO superior (banner) ---- */
+  #ad-top{
+    width:100%; max-width:480px; min-height:60px;
+    display:flex; align-items:center; justify-content:center;
+    color:#5a6478; font-size:12px; border-bottom:1px solid rgba(255,255,255,.06);
+    background:rgba(0,0,0,.25); z-index:20;
+  }
+
+  #game-wrap{
+    position:relative; flex:1; width:100%; max-width:480px;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  canvas{ display:block; width:100%; height:100%; background:transparent; }
+
+  /* ---- Overlays ---- */
+  .overlay{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px; text-align:center;
+    padding:24px; background:rgba(13,27,42,.80); backdrop-filter:blur(5px);
+    z-index:10;
+  }
+  .hidden{ display:none !important; }
+  h1{ font-size:clamp(34px,10vw,56px); letter-spacing:3px; font-weight:900;
+      background:linear-gradient(90deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:0 4px 30px rgba(255,214,10,.3); animation:float 3s ease-in-out infinite; }
+  @keyframes float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .sub{ color:#9aa5b8; font-size:15px; max-width:310px; line-height:1.55; }
+  .legend{ display:flex; gap:18px; color:#9aa5b8; font-size:13px; }
+  .legend span{ display:flex; align-items:center; gap:5px; }
+  .btn{
+    font-family:var(--font); font-weight:800; font-size:20px; cursor:pointer;
+    padding:16px 44px; border:none; border-radius:50px; color:#0d1b2a;
+    background:linear-gradient(90deg,var(--accent),#ffb703);
+    box-shadow:0 8px 28px rgba(255,183,3,.4); transition:transform .08s ease;
+  }
+  .btn:active{ transform:scale(.94); }
+  .stat{ font-size:17px; color:#9aa5b8; }
+  .stat b{ color:var(--text); font-size:46px; display:block; }
+  .best{ color:var(--accent); font-weight:700; }
+  .medal{ font-size:66px; line-height:1; }
+
+  /* HUD */
+  #hud{ position:absolute; top:12px; left:0; right:0; z-index:5; pointer-events:none;
+        display:flex; align-items:center; justify-content:center; gap:22px; }
+  #score-hud{ font-size:46px; font-weight:900; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.3); }
+  #coin-hud{ font-size:22px; font-weight:800; color:var(--coin); text-shadow:0 2px 0 rgba(0,0,0,.3); }
+  #shield-hud{ font-size:22px; opacity:0; transition:opacity .2s; }
+  #shield-hud.on{ opacity:1; }
+
+  /* Anuncio intersticial */
+  #ad-interstitial{
+    width:min(320px,84vw); min-height:150px; border-radius:16px;
+    border:1px dashed rgba(255,255,255,.18); background:rgba(0,0,0,.2);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    gap:6px; color:#5a6478; font-size:13px; padding:16px;
+  }
+  .countdown{ color:#9aa5b8; font-size:13px; min-height:18px; }
+
+  /* ---- Botón de DONACIONES (flotante) ---- */
+  #donate{
+    position:fixed; bottom:14px; right:14px; z-index:30;
+    text-decoration:none; font-family:var(--font); font-weight:800; font-size:14px;
+    color:#fff; background:linear-gradient(90deg,#ff5e62,#ff2e63);
+    padding:11px 18px; border-radius:50px; box-shadow:0 6px 20px rgba(255,46,99,.45);
+    display:flex; align-items:center; gap:7px; transition:transform .12s ease;
+  }
+  #donate:active{ transform:scale(.93); }
+  footer{ font-size:11px; color:#3d4759; padding:6px; }
+</style>
+</head>
+<body>
+
+  <!-- ====== ANUNCIO SUPERIOR ====== -->
+  <div id="ad-top">
+    <!-- PASO 2: pega aquí tu bloque de anuncio (AdSense u otra red). -->
+    Espacio para anuncio (320×50)
+  </div>
+
+  <div id="game-wrap">
+    <div id="hud" class="hidden">
+      <span id="coin-hud">🪙 0</span>
+      <span id="score-hud">0</span>
+      <span id="shield-hud">🛡️</span>
+    </div>
+    <canvas id="c"></canvas>
+
+    <!-- Inicio -->
+    <div id="start" class="overlay">
+      <h1>SKY DASH</h1>
+      <p class="sub">Toca la pantalla (o <b>ESPACIO</b>) para volar y esquivar.</p>
+      <div class="legend">
+        <span>🪙 Recoge monedas</span>
+        <span>🛡️ Escudo = 1 choque gratis</span>
+      </div>
+      <button class="btn" id="play-btn">JUGAR ▶</button>
+      <p class="stat">Récord: <span class="best" id="best-start">0</span></p>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameover" class="overlay hidden">
+      <div class="medal" id="medal">🏅</div>
+      <p class="stat">Puntaje<b id="final-score">0</b></p>
+      <p class="stat" style="font-size:15px">🪙 <span id="final-coins">0</span> monedas · Récord: <span class="best" id="best-end">0</span></p>
+
+      <!-- ====== ANUNCIO INTERSTICIAL (el más rentable) ====== -->
+      <div id="ad-interstitial">
+        <!-- PASO 3: pega aquí un anuncio grande (300×250). -->
+        Espacio para anuncio (300×250)
+      </div>
+
+      <button class="btn hidden" id="retry-btn">JUGAR DE NUEVO 🔁</button>
+      <p class="countdown" id="countdown">Continuar en 3…</p>
+    </div>
+  </div>
+
+  <!-- ====== DONACIONES ======
+       PASO 4: crea una cuenta GRATIS en https://ko-fi.com y reemplaza
+       "tu_usuario" por tu nombre de usuario de Ko-fi. (O usa PayPal.me / etc.) -->
+  <a id="donate" href="https://ko-fi.com/tu_usuario" target="_blank" rel="noopener">❤️ Apoyar</a>
+
+  <footer>Sky Dash · Hecho con ❤️</footer>
+
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const hud = document.getElementById('hud');
+  const scoreHud = document.getElementById('score-hud');
+  const coinHud = document.getElementById('coin-hud');
+  const shieldHud = document.getElementById('shield-hud');
+  const startScreen = document.getElementById('start');
+  const overScreen  = document.getElementById('gameover');
+  const wrap = document.getElementById('game-wrap');
+
+  let W=0, H=0, DPR=1;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = wrap.clientWidth; H = wrap.clientHeight;
+    canvas.width = W*DPR; canvas.height = H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+
+  const STATE = { MENU:0, PLAY:1, OVER:2 };
+  let state = STATE.MENU;
+  let best = +(localStorage.getItem('skydash_best')||0);
+  document.getElementById('best-start').textContent = best;
+
+  const player = { x:0, y:0, r:14, vy:0 };
+  const GRAVITY = 1500, FLAP = -430;
+  let obstacles=[], coins=[], powerups=[], particles=[], stars=[];
+  let score=0, coinCount=0, speed=0, spawnTimer=0, shake=0, lastT=0, bgScroll=0;
+  let shield=false, hueShift=0;
+
+  // ---- Audio ----
+  let actx=null;
+  function beep(freq,dur,type='square',vol=0.08){
+    try{
+      if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+      const o=actx.createOscillator(),g=actx.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=vol;
+      o.connect(g); g.connect(actx.destination);
+      const t=actx.currentTime;
+      g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.start(t); o.stop(t+dur);
+    }catch(e){}
+  }
+
+  function initStars(){
+    stars=[];
+    for(let i=0;i<48;i++) stars.push({
+      x:Math.random()*W, y:Math.random()*H,
+      z:0.3+Math.random()*0.9, s:Math.random()<0.8?1:2
+    });
+  }
+
+  function reset(){
+    resize();
+    player.x=W*0.28; player.y=H*0.45; player.vy=0;
+    obstacles=[]; coins=[]; powerups=[]; particles=[];
+    score=0; coinCount=0; speed=185; spawnTimer=0; shake=0;
+    bgScroll=0; shield=false; hueShift=0;
+    scoreHud.textContent='0'; coinHud.textContent='🪙 0';
+    shieldHud.classList.remove('on');
+    initStars();
+  }
+
+  function startGame(){
+    reset(); state=STATE.PLAY;
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+    hud.classList.remove('hidden');
+    flap();
+  }
+
+  function flap(){
+    if(state!==STATE.PLAY) return;
+    player.vy=FLAP; beep(660,0.08,'square',0.06);
+    for(let i=0;i<5;i++) particles.push({
+      x:player.x-8,y:player.y,vx:-60-Math.random()*60,vy:(Math.random()-0.5)*80,
+      life:0.4,max:0.4,c:'#ffd60a',s:3
+    });
+  }
+
+  function spawnSet(){
+    const minGap=130;
+    const g=Math.max(minGap, 215 - score*1.4);
+    const margin=50;
+    const top=margin+Math.random()*(H-g-margin*2);
+    obstacles.push({x:W+30,w:62,gapY:top,gapH:g,passed:false});
+    // moneda en el centro del hueco (a veces 1, a veces 3 en fila)
+    const cy=top+g/2;
+    const n = Math.random()<0.35?3:1;
+    for(let i=0;i<n;i++) coins.push({x:W+30+31+(i-(n-1)/2)*26, y:cy, taken:false, t:i*0.1});
+    // power-up escudo ocasional
+    if(Math.random()<0.12) powerups.push({x:W+30+31, y:margin+Math.random()*(H-margin*2), taken:false, kind:'shield'});
+  }
+
+  function gameOver(){
+    state=STATE.OVER; shake=16;
+    beep(180,0.2,'sawtooth',0.1); setTimeout(()=>beep(120,0.3,'sawtooth',0.1),90);
+    for(let i=0;i<30;i++) particles.push({
+      x:player.x,y:player.y,vx:(Math.random()-0.5)*380,vy:(Math.random()-0.5)*380,
+      life:0.7,max:0.7,c:Math.random()<0.5?'#ff6b6b':'#ffd60a',s:4
+    });
+    const total = score + coinCount;
+    if(total>best){ best=total; localStorage.setItem('skydash_best',best); }
+    setTimeout(showGameOver,650);
+  }
+
+  function showGameOver(){
+    hud.classList.add('hidden');
+    const total=score+coinCount;
+    document.getElementById('final-score').textContent=total;
+    document.getElementById('final-coins').textContent=coinCount;
+    document.getElementById('best-end').textContent=best;
+    document.getElementById('best-start').textContent=best;
+    const m = total>=50?'🏆':total>=30?'🥇':total>=15?'🥈':total>=6?'🥉':'🎮';
+    document.getElementById('medal').textContent=m;
+    overScreen.classList.remove('hidden');
+    const retry=document.getElementById('retry-btn'), cd=document.getElementById('countdown');
+    retry.classList.add('hidden'); let n=3;
+    cd.classList.remove('hidden'); cd.textContent=`Continuar en ${n}…`;
+    const timer=setInterval(()=>{
+      n--;
+      if(n<=0){ clearInterval(timer); cd.classList.add('hidden'); retry.classList.remove('hidden'); }
+      else cd.textContent=`Continuar en ${n}…`;
+    },1000);
+  }
+
+  function hit(){
+    if(shield){
+      shield=false; shieldHud.classList.remove('on');
+      beep(300,0.15,'sine',0.12); shake=10;
+      for(let i=0;i<16;i++) particles.push({
+        x:player.x,y:player.y,vx:(Math.random()-0.5)*300,vy:(Math.random()-0.5)*300,
+        life:0.5,max:0.5,c:'#4cc9f0',s:3
+      });
+      // empuja al jugador a un lugar seguro: anula velocidad
+      player.vy=-150;
+      return false; // sobrevive
+    }
+    return true; // muere
+  }
+
+  function update(dt){
+    bgScroll=(bgScroll+speed*dt*0.4)%W;
+    hueShift=(hueShift+dt*6)%360;
+    for(const s of stars){ s.x-=speed*dt*0.25*s.z; if(s.x<-4) s.x=W+4; }
+
+    if(state!==STATE.PLAY){
+      updateParticles(dt);
+      if(shake>0) shake=Math.max(0,shake-dt*40);
+      return;
+    }
+    speed+=dt*4.5;
+    player.vy+=GRAVITY*dt; player.y+=player.vy*dt;
+    if(player.y-player.r<0){ player.y=player.r; player.vy=0; }
+    if(player.y+player.r>H){ if(hit()){ gameOver(); return; } else player.y=H-player.r-20; }
+
+    spawnTimer-=dt;
+    const interval=Math.max(0.95, 1.55 - score*0.008);
+    if(spawnTimer<=0){ spawnSet(); spawnTimer=interval; }
+
+    for(const o of obstacles){
+      o.x-=speed*dt;
+      if(!o.passed && o.x+o.w<player.x){ o.passed=true; score++; scoreHud.textContent=score; beep(880,0.06,'square',0.05); }
+      const inX=player.x+player.r>o.x && player.x-player.r<o.x+o.w;
+      if(inX){
+        if(player.y-player.r<o.gapY || player.y+player.r>o.gapY+o.gapH){
+          if(hit()){ gameOver(); return; }
+        }
+      }
+    }
+    obstacles=obstacles.filter(o=>o.x+o.w>-10);
+
+    for(const cn of coins){
+      cn.x-=speed*dt;
+      if(!cn.taken){
+        const dx=cn.x-player.x, dy=cn.y-player.y;
+        if(dx*dx+dy*dy < (player.r+12)*(player.r+12)){
+          cn.taken=true; coinCount++; coinHud.textContent='🪙 '+coinCount;
+          beep(1200,0.07,'sine',0.07);
+          for(let i=0;i<6;i++) particles.push({x:cn.x,y:cn.y,vx:(Math.random()-0.5)*160,vy:(Math.random()-0.5)*160,life:0.4,max:0.4,c:'#ffd60a',s:3});
+        }
+      }
+    }
+    coins=coins.filter(c=>!c.taken && c.x>-20 || (c.taken && false)).filter(c=>c.x>-20);
+
+    for(const p of powerups){
+      p.x-=speed*dt;
+      if(!p.taken){
+        const dx=p.x-player.x, dy=p.y-player.y;
+        if(dx*dx+dy*dy<(player.r+14)*(player.r+14)){
+          p.taken=true; shield=true; shieldHud.classList.add('on');
+          beep(520,0.12,'triangle',0.1); setTimeout(()=>beep(780,0.12,'triangle',0.1),80);
+          for(let i=0;i<10;i++) particles.push({x:p.x,y:p.y,vx:(Math.random()-0.5)*200,vy:(Math.random()-0.5)*200,life:0.5,max:0.5,c:'#4cc9f0',s:3});
+        }
+      }
+    }
+    powerups=powerups.filter(p=>!p.taken && p.x>-20);
+
+    updateParticles(dt);
+    if(shake>0) shake=Math.max(0,shake-dt*40);
+  }
+
+  function updateParticles(dt){
+    for(const p of particles){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; }
+    particles=particles.filter(p=>p.life>0);
+  }
+
+  function draw(t){
+    // fondo degradado animado
+    const g=ctx.createLinearGradient(0,0,0,H);
+    const h=(200+Math.sin(hueShift*Math.PI/180)*20);
+    g.addColorStop(0, `hsl(${h},45%,12%)`);
+    g.addColorStop(1, `hsl(${h+20},40%,20%)`);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    // estrellas parallax
+    for(const s of stars){
+      ctx.globalAlpha=0.3+s.z*0.5; ctx.fillStyle='#fff';
+      ctx.fillRect(s.x,s.y,s.s,s.s);
+    }
+    ctx.globalAlpha=1;
+
+    let sx=0,sy=0;
+    if(shake>0){ sx=(Math.random()-0.5)*shake; sy=(Math.random()-0.5)*shake; }
+    ctx.save(); ctx.translate(sx,sy);
+
+    // obstáculos con brillo
+    for(const o of obstacles){
+      const grad=ctx.createLinearGradient(o.x,0,o.x+o.w,0);
+      grad.addColorStop(0,'#06d6a0'); grad.addColorStop(1,'#04a47a');
+      ctx.fillStyle=grad; ctx.shadowColor='rgba(6,214,160,.5)'; ctx.shadowBlur=12;
+      roundRect(o.x,0,o.w,o.gapY,9); ctx.fill();
+      roundRect(o.x,o.gapY+o.gapH,o.w,H-(o.gapY+o.gapH),9); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // monedas (giran)
+    const tt = (t||0)/1000;
+    for(const cn of coins){
+      if(cn.taken) continue;
+      const sw=Math.abs(Math.cos(tt*4+cn.x*0.05));
+      ctx.save(); ctx.translate(cn.x,cn.y);
+      ctx.fillStyle='#ffd60a'; ctx.shadowColor='#ffd60a'; ctx.shadowBlur=14;
+      ctx.beginPath(); ctx.ellipse(0,0,5+sw*5,11,0,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0; ctx.restore();
+    }
+
+    // power-ups (escudo)
+    for(const p of powerups){
+      if(p.taken) continue;
+      ctx.save(); ctx.translate(p.x,p.y);
+      ctx.font='24px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.shadowColor='#4cc9f0'; ctx.shadowBlur=16; ctx.fillText('🛡️',0,0);
+      ctx.shadowBlur=0; ctx.restore();
+    }
+
+    // partículas
+    for(const p of particles){
+      ctx.globalAlpha=Math.max(0,p.life/p.max); ctx.fillStyle=p.c;
+      ctx.fillRect(p.x,p.y,p.s,p.s);
+    }
+    ctx.globalAlpha=1;
+
+    // jugador
+    if(state!==STATE.OVER || particles.length>22){
+      ctx.save(); ctx.translate(player.x,player.y);
+      const tilt=Math.max(-0.5,Math.min(0.9,player.vy/600)); ctx.rotate(tilt);
+      if(shield){
+        ctx.beginPath(); ctx.arc(0,0,player.r+9,0,Math.PI*2);
+        ctx.strokeStyle='rgba(76,201,240,.9)'; ctx.lineWidth=3;
+        ctx.shadowColor='#4cc9f0'; ctx.shadowBlur=14; ctx.stroke(); ctx.shadowBlur=0;
+      }
+      ctx.font='26px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🚀',0,0); ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r){
+    if(h<=0) return; r=Math.min(r,h/2,w/2);
+    ctx.beginPath(); ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  function loop(t){
+    if(!lastT) lastT=t;
+    let dt=(t-lastT)/1000; lastT=t;
+    if(dt>0.05) dt=0.05;
+    update(dt); draw(t);
+    requestAnimationFrame(loop);
+  }
+
+  function onTap(e){ if(e) e.preventDefault(); if(state===STATE.PLAY) flap(); }
+  wrap.addEventListener('pointerdown', onTap);
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault();
+      if(state===STATE.MENU) startGame(); else if(state===STATE.PLAY) flap(); }
+  });
+  document.getElementById('play-btn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
+  document.getElementById('retry-btn').addEventListener('click', e=>{ e.stopPropagation(); startGame(); });
+
+  resize(); initStars();
+  player.x=W*0.28; player.y=H*0.45;
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
